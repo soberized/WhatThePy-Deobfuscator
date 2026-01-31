@@ -11,6 +11,17 @@ import re
 from typing import Dict, List, Tuple, Optional
 import dis
 
+def watermarker(code: str, method: str = 'unknown') -> str:
+    import datetime
+    timestamp = datetime.datetime.now()
+    header = (
+        f"# Deobfuscated by WhatThePy-Deobfuscator\n"
+        f"# https://github.com/soberized/WhatThePy-Deobfuscator\n"
+        f"# Recovery method: {method}\n"
+        f"# Recovery timestamp: {timestamp}\n\n"
+    )
+    return header + code
+
 class SoberDeobfuscator:
     
     def __init__(self, obfcode: str):
@@ -185,24 +196,18 @@ class SoberDeobfuscator:
         self.extracted_source = original
         return original
     
-    def generate_clean_output(self, output_path: str = None) -> str:
+    def GenCleanOutput(self, output_path: str = None) -> str:
         if not self.extracted_source:
             self.deobfuscate()
         
-        clean_code = f"""# SHΔDØW-DEOB RECOVERY
-# Original code extracted from obfuscated payload
-# Recovery timestamp: {__import__('datetime').datetime.now()}
-# Deobfuscator: SHΔDØW CORE v99.7
-
-{self.extracted_source}
-"""
+        CleanCode = watermarker(self.extracted_source, method='AST')
         
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(clean_code)
+                f.write(CleanCode)
             print(f" [{Orange}/{Reset}] Clean code written to: {output_path}")
         
-        return clean_code
+        return CleanCode
 
 
 class GenDeobfuscator:
@@ -216,16 +221,14 @@ class GenDeobfuscator:
             r"b['\"].*?['\"]"
         ]
         
-        # Extract all suspicious strings (base85 encoded)
         B85Pattern = r"['\"]([0-9A-Za-z!#$%&()*+-;<=>?@^_`{|}~]{15,})['\"]"
         AllStrings = re.findall(B85Pattern, code)
         
-        # Filter decoys (random strings vs actual base85)
-        def is_likely_base85(s: str) -> bool:
+        def islikelybase85(s: str) -> bool:
             base85_chars = set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~")
             return all(c in base85_chars for c in s) and len(s) >= 20
         
-        LikelyPayloadList = [s for s in AllStrings if is_likely_base85(s)]
+        LikelyPayloadList = [s for s in AllStrings if islikelybase85(s)]
         
         for candidate in LikelyPayloadList:
             try:
@@ -290,16 +293,20 @@ def Deobfuscate_File(filepath: str, destination: str = None, method: str = "ast"
         deob = SoberDeobfuscator(obfcode)
         try:
             original = deob.deobfuscate()
+            method_used = 'ast'
         except Exception as e:
             print(f" [{Orange}!{Reset}] AST method failed: {e}")
             print(f" [{Orange}*{Reset}] Falling back to static analysis...")
             original = GenDeobfuscator.StaticDeobfuscate(obfcode)
+            method_used = 'static'
     else:
         original = GenDeobfuscator.StaticDeobfuscate(obfcode)
+        method_used = 'static' 
     print(f" [{Orange}/{Reset}] Successfully recovered {len(original)} characters of original code")
     if destination:
+        output_data = watermarker(original, method=method_used if 'method_used' in locals() else method)
         with open(destination, 'w', encoding='utf-8') as f:
-            f.write(original)
+            f.write(output_data)
         print(f" [{Orange}/{Reset}] Saved to: {destination}")
     return original
 
@@ -351,8 +358,9 @@ if __name__ == "__main__":
             code = f.read()
         try:
             result = GenDeobfuscator.bruteforce(code)
-            with open(destination + ".brute", 'w') as f:
-                f.write(result)
+            brute_output = watermarker(result, method='bruteforce')
+            with open(destination + ".brute", 'w', encoding='utf-8') as f:
+                f.write(brute_output)
             print(f" [{Orange}/{Reset}] Brute force recovery saved to {destination}.brute")
         except:
             print(f" [{Orange}X{Reset}] All recovery methods exhausted.")
