@@ -1,6 +1,7 @@
-# 🐞 WhatThePy Deobfuscator
+# 🐞 WhatThePy Deobfuscator v2.0
 
 A deobfuscator built for decompiling python files masked with WhatThePy
+Updated to V2
 
 ## 📸 Showcase
 
